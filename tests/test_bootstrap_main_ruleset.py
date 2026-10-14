@@ -185,24 +185,12 @@ class BootstrapTests(unittest.TestCase):
         self.assertNotIn("token:", text)
         self.assertNotIn("shell", text.lower())
 
-    def test_bootstrap_workflow_is_explicitly_allowlisted(self):
+    def test_privileged_actions_bootstrap_is_retired(self):
         from pathlib import Path
-        wf = (Path(__file__).resolve().parents[1] /
-              ".github/workflows/main-ruleset-bootstrap.yml").read_text()
-        self.assertIn("ericson-j-santos/agent-core", wf)
-        self.assertIn("AGENT_CORE_RULESET_ADMIN_TOKEN", wf)
-        self.assertIn("github.actor == 'ericson-j-santos'", wf)
-        self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", wf)
-        self.assertIn("feat/main-ruleset-bootstrap-20261014", wf)
-        self.assertIn("needs: [bootstrap-contract-tests]", wf)
-        self.assertIn('run: python -m scripts.bootstrap_main_ruleset --expected-main "$EXPECTED_MAIN"', wf)
-        self.assertNotIn("run: python scripts/bootstrap_main_ruleset.py", wf)
-        self.assertIn("types: [opened, reopened, synchronize, edited]", wf)
-        self.assertIn("contents: read", wf)
-        self.assertNotIn("pull_request_target:", wf)
-        self.assertNotIn("contents: write", wf)
-        self.assertNotIn("continue-on-error:", wf)
-        self.assertNotIn("|| true", wf)
+        root = Path(__file__).resolve().parents[1]
+        self.assertFalse((root / ".github/workflows/main-ruleset-bootstrap.yml").exists())
+        self.assertTrue((root / "scripts/bootstrap_main_ruleset.py").is_file())
+        self.assertTrue((root / "config/governance/ruleset-attestation-v1.json").is_file())
 
 
 if __name__ == "__main__":
