@@ -36,4 +36,4 @@ jobs:
       - name: Live GitHub metadata attestation without admin secret
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/audit_readonly_attestation.py
+        run: python -m scripts.audit_readonly_attestation

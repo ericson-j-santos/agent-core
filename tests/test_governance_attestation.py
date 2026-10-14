@@ -179,6 +179,8 @@ class RulesetAttestationTests(unittest.TestCase):
         self.assertNotIn("contents: write", workflow)
         self.assertNotIn("pull_request_target", workflow)
         self.assertNotIn("continue-on-error", workflow)
+        self.assertIn("run: python -m scripts.audit_readonly_attestation", workflow)
+        self.assertNotIn("run: python scripts/audit_readonly_attestation.py", workflow)
 
     def test_no_external_credential_or_mutation_in_module(self):
         code = (ROOT / "scripts/audit_readonly_attestation.py").read_text()
