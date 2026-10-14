@@ -68,6 +68,26 @@ class RulesetAttestationTests(unittest.TestCase):
         self.assertEqual(len(trace), 7)
         self.assertEqual(trace[-1], f"/repos/{REPO}/branches/main")
 
+    def test_github_native_utc_encoding_is_exact_same_instant(self):
+        data = fixture()
+        native = "2026-10-14T16:52:12.227Z"
+        data["summary"][0]["updated_at"] = native
+        data["detail"]["updated_at"] = native
+        result, _ = run_fixture(data)
+        self.assertEqual(result["status"], "verified_attested")
+
+    def test_one_millisecond_drift_still_blocks(self):
+        data = fixture()
+        data["summary"][0]["updated_at"] = "2026-10-14T16:52:12.228Z"
+        with self.assertRaisesRegex(AuditBlocked, "version_changed"):
+            run_fixture(data)
+
+    def test_timestamp_without_timezone_is_never_accepted(self):
+        data = fixture()
+        data["summary"][0]["updated_at"] = "2026-10-14T16:52:12.227"
+        with self.assertRaisesRegex(AuditBlocked, "timezone_missing"):
+            run_fixture(data)
+
     def test_positive_when_admin_can_view_bypass(self):
         result, _ = run_fixture(fixture(show_bypass=True))
         self.assertEqual(result["status"], "verified_live")

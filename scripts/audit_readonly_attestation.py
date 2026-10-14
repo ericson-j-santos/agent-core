@@ -8,6 +8,7 @@ Any change, missing metadata, or ambiguous rule is BLOCKED. No mutating API.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -57,6 +58,23 @@ def validate_attestation(attestation: Any) -> dict[str, Any]:
     return attestation
 
 
+def _as_utc(value: Any) -> datetime:
+    _require(isinstance(value, str) and bool(value),
+             "ruleset_timestamp_missing")
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise AuditBlocked("ruleset_timestamp_invalid") from None
+    _require(stamp.tzinfo is not None and stamp.utcoffset() is not None,
+             "ruleset_timestamp_timezone_missing")
+    return stamp.astimezone(timezone.utc)
+
+
+def _same_instant(observed: Any, attested: str) -> bool:
+    # UTC conversion retains microseconds; never round or add tolerance.
+    return _as_utc(observed) == _as_utc(attested)
+
+
 def _validate_summary(rows: Any, att: dict[str, Any]) -> dict[str, Any]:
     _require(isinstance(rows, list) and len(rows) == 1 and isinstance(rows[0], dict),
              "ruleset_inventory_not_unique")
@@ -71,7 +89,7 @@ def _validate_summary(rows: Any, att: dict[str, Any]) -> dict[str, Any]:
         "ruleset_summary_identity_invalid",
     )
     _require(
-        row.get("updated_at") == att["ruleset_updated_at"],
+        _same_instant(row.get("updated_at"), att["ruleset_updated_at"]),
         "ruleset_version_changed_recredential_required",
     )
     return row
@@ -95,7 +113,7 @@ def audit_readonly_attested(
     detail = read(root + f"/rulesets/{att['ruleset_id']}")
     _require(isinstance(detail, dict) and detail.get("id") == att["ruleset_id"],
              "ruleset_detail_identity_invalid")
-    _require(detail.get("updated_at") == att["ruleset_updated_at"],
+    _require(_same_instant(detail.get("updated_at"), att["ruleset_updated_at"]),
              "ruleset_detail_version_changed")
     live_bypass_visible = "bypass_actors" in detail
     if live_bypass_visible:
