@@ -1,0 +1,12 @@
+{
+  "schema_version": "agent-core/ruleset-attestation-v1",
+  "repository": "ericson-j-santos/agent-core",
+  "branch": "main",
+  "ruleset_name": "agent-core-main-governed",
+  "ruleset_id": 25099330,
+  "ruleset_updated_at": "2026-10-14T09:52:12.227-07:00",
+  "bypass_actors_at_attestation": [],
+  "trusted_audit_run": 38604135772,
+  "trusted_main_sha": "4a0a2f7053b4d7ab27188f8987086682033c2998",
+  "mode": "privileged_get_verified_no_bypass"
+}

@@ -1,0 +1,39 @@
+name: Agent Core Read-only Ruleset Canary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/audit_readonly_attestation.py"
+      - "tests/test_governance_attestation.py"
+      - "config/governance/ruleset-attestation-v1.json"
+      - ".github/workflows/governance-attestation-canary.yml"
+      - ".github/workflows/main-governance-audit.yml"
+      - ".github/workflows/main-ruleset-bootstrap.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readonly-ruleset-canary-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  unprivileged-attestation-e2e:
+    name: unprivileged-attestation-e2e
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Static negative controls and replay
+        run: |
+          python -W error::SyntaxWarning -m compileall -q scripts/audit_readonly_attestation.py tests/test_governance_attestation.py
+          python -m unittest discover -s tests -p 'test_governance_attestation.py' -v
+      - name: Live GitHub metadata attestation without admin secret
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m scripts.audit_readonly_attestation
