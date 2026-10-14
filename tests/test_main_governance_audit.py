@@ -203,6 +203,6 @@ class GovernanceAuditTests(unittest.TestCase):
         def fake_get(path):
             called.append(path)
             return copy.deepcopy(observations[path])
-        with self.assertRaisesRegex(AuditBlocked, "not_unique"):
+        with self.assertRaisesRegex(AuditBlocked, "required_ruleset_missing"):
             audit(fake_get, d["template"])
         self.assertEqual(called, list(observations))

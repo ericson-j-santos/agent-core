@@ -156,6 +156,7 @@ def audit(
         if isinstance(summaries, list)
         else []
     )
+    _require(len(matches) > 0, "required_ruleset_missing")
     _require(len(matches) == 1, "required_ruleset_not_unique")
     rule_id = matches[0].get("id")
     _require(type(rule_id) is int and rule_id > 0, "ruleset_id_invalid")
