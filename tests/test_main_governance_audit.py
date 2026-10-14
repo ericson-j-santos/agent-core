@@ -220,6 +220,30 @@ class GovernanceAuditTests(unittest.TestCase):
             audit(moving_read, d["template"])
         self.assertEqual(calls[-1], prefix + "/branches/main")
 
+    def test_live_audit_requires_admin_visibility_without_network_fallback(self):
+        import os
+        from unittest.mock import patch
+        from scripts.audit_main_governance import read_github
+        with patch.dict(os.environ, {"GITHUB_TOKEN": ""}):
+            with patch("urllib.request.urlopen", side_effect=AssertionError("network must not be used")):
+                with self.assertRaisesRegex(AuditBlocked, "github_audit_admin_credential_missing"):
+                    read_github(f"/repos/{REPOSITORY}")
+
+    def test_admin_secret_is_scoped_to_protected_main_job_not_pr_tests(self):
+        workflow = (ROOT / ".github/workflows/main-governance-audit.yml").read_text()
+        marker = "  main-server-ruleset-audit:\n"
+        self.assertEqual(workflow.count(marker), 1)
+        before, after = workflow.split(marker)
+        self.assertNotIn("secrets.AGENT_CORE_RULESET_ADMIN_TOKEN", before)
+        self.assertIn("GITHUB_TOKEN: " + "$" + "{{ secrets.AGENT_CORE_RULESET_ADMIN_TOKEN }}", after)
+        self.assertIn(
+            "if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
+            after,
+        )
+        self.assertNotIn("pull_request_target:", workflow)
+        self.assertNotIn("continue-on-error:", workflow)
+        self.assertNotIn("|| true", workflow)
+
     def test_audit_stops_on_missing_ruleset_without_mutation(self):
         d = fake_dataset()
         prefix = f"/repos/{REPOSITORY}"
