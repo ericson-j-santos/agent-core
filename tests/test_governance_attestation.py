@@ -115,7 +115,7 @@ class RulesetAttestationTests(unittest.TestCase):
     def test_missing_updated_at_blocks(self):
         data = fixture()
         data["summary"][0].pop("updated_at")
-        with self.assertRaisesRegex(AuditBlocked, "ruleset_version_changed"):
+        with self.assertRaisesRegex(AuditBlocked, "ruleset_timestamp_missing"):
             run_fixture(data)
 
     def test_mismatched_attestation_fails_closed(self):
