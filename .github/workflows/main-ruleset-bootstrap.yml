@@ -2,7 +2,7 @@ name: Agent Core Ruleset Bootstrap (Owner Only)
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, edited]
     branches: [main]
     paths:
       - "scripts/bootstrap_main_ruleset.py"

@@ -178,6 +178,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", wf)
         self.assertIn("feat/main-ruleset-bootstrap-20261014", wf)
         self.assertIn("needs: [bootstrap-contract-tests]", wf)
+        self.assertIn("types: [opened, reopened, synchronize, edited]", wf)
         self.assertIn("contents: read", wf)
         self.assertNotIn("pull_request_target:", wf)
         self.assertNotIn("contents: write", wf)

@@ -9,7 +9,7 @@ O token automático `GITHUB_TOKEN` não possui permissão `Administration: write
 1. Em **Settings → Developer settings → Personal access tokens → Fine-grained tokens**, escolha o proprietário da conta e selecione **Only select repositories → agent-core**.
 2. Permissões: somente **Repository permissions → Administration: Read and write** (mais Metadata: read, concedido pela plataforma). Use uma expiração curta, de preferência 7 dias.
 3. Sem colar o token no chat, salve-o como **Actions repository secret** chamado `AGENT_CORE_RULESET_ADMIN_TOKEN` em [Secrets and variables → Actions](https://github.com/ericson-j-santos/agent-core/settings/secrets/actions).
-4. Execute novamente o job da PR de bootstrap após a criação do segredo, caso a primeira tentativa tenha falhado por ausência de credencial. O código reavalia o estado e não duplica a regra.
+4. Depois de criar o segredo, produza um evento **novo** de PR editando a descrição da PR de bootstrap (ou solicite essa edição no ChatGPT com a conexão GitHub). Isso cria uma execução com o segredo disponível; reexecutar um job antigo pode reutilizar o estado da execução original. O código reavalia o estado e não duplica a regra.
 
 O token só é lido pelo job confiável `owner-authorized-bootstrap`, condicionado à conta proprietária, à branch `feat/main-ruleset-bootstrap-20261014`, a PR interna e à base `main`. O job executa **GETs**, um único **POST** ao endpoint de rulesets quando a regra não existe, e mais GETs para conferir os atributos; não existe caminho de PUT/DELETE, nem host ou repo dinâmico.
 
