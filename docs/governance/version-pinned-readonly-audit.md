@@ -40,11 +40,21 @@ attestation, independently reviewed and pinned in a PR.
 
 ## Secure cutover
 
-Run the [unprivileged canary](../.github/workflows/governance-attestation-canary.yml)
-with the native GitHub Actions token and no admin secrets. After an
-independent positive E2E on the exact SHA, replace the daily privileged
-`main-server-ruleset-audit` job with this version-pinned, read-only audit and
-verify the result on main. Keep `agent-core-test` required server-side.
+Run the [unprivileged canary](../../.github/workflows/governance-attestation-canary.yml)
+with the native GitHub Actions token and no admin secrets. The canary
+validated a real `verified_attested` response at run
+[#38609526557](https://github.com/ericson-j-santos/agent-core/actions/runs/38609526557).
+GitHub represents the exact same instant as
+`2026-10-14T16:52:12.227Z` and `2026-10-14T09:52:12.227-07:00`; the
+implementation normalizes UTC precisely without allowing millisecond drift.
+
+The daily `main-server-ruleset-audit` job has been changed in the
+versioned PR to use `github.token` and this version-pinned audit. The
+retired one-time administrative bootstrap Actions workflow is removed
+from the new version, while its Python source is retained for reviewed
+manual disaster recovery. Independently verify the daily job on the
+post-merge `main` HEAD before revoking any credential. Keep
+`agent-core-test` required server-side.
 
 **Only then** revoke the temporary fine-grained bootstrap PAT in GitHub and
 delete `AGENT_CORE_RULESET_ADMIN_TOKEN` from repository Actions Secrets. The
