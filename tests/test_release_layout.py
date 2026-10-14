@@ -20,17 +20,25 @@ class ReleaseContract(unittest.TestCase):
         self.assertTrue(required['parameters']['strict_required_status_checks_policy'])
         self.assertEqual(next(r for r in policy['rules'] if r['type']=='pull_request')['parameters']['required_approving_review_count'], 0)
 
-    def test_release_contains_no_private_project_names(self):
+    def test_public_source_rejects_credential_and_private_path_patterns(self):
+        # Construct generic patterns so this public test file does not
+        # embed any real private repository name, machine name or account ID.
+        forbidden = (
+            "github" + "_pat_",
+            "gh" + "p_",
+            "BEGIN " + "PRIVATE KEY",
+            "C:" + "\\Users\\private-",
+            "https://" + "internal.example.invalid/",
+            "example." + "corp.local",
+        )
         for path in ROOT.rglob('*'):
             if not path.is_file() or '.git' in path.parts or '__pycache__' in path.parts:
                 continue
             if path.suffix not in {'.py', '.md', '.toml', '.yml', '.json'}:
                 continue
             text = path.read_text(encoding='utf-8')
-            for forbidden in ('reqsys'+'-v2-enterprise-real', 'reqsys'+'-engineering-orchestrator',
-                              'ericson'+'-j-santos', 'DESKTOP'+'-PDQK954',
-                              'noteri'+'-runtime', 'github'+'_pat_', 'gh'+'p_'):
-                self.assertNotIn(forbidden, text, (path, forbidden))
+            for pattern in forbidden:
+                self.assertNotIn(pattern, text, (path, pattern))
 
     def test_workflow_read_only_and_check_named(self):
         text=(ROOT/'.github/workflows/ci.yml').read_text()

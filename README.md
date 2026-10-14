@@ -32,7 +32,7 @@ GitHub Free permits protection of public repositories; this package does not alt
 
 ## Deferred modules
 
-Integrations with an existing TODO Global, engineering Worker Pool, Desktop/Noteri or external LLM require their own versioned capabilities, isolation, preflight, authorization, concurrency ownership, lifecycle/recovery evidence and E2E tests. This read-only package is not a fully autonomous Dot.
+Integrations with external task trackers, execution pools, managed hosts or language models require separate versioned capabilities, isolation, authorization, concurrency control, recovery evidence and end-to-end testing. This read-only package is not a fully autonomous assistant.
 
 ## Validation boundaries
 
