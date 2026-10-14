@@ -36,9 +36,9 @@ jobs:
           python -W error::SyntaxWarning -m compileall -q scripts/audit_main_governance.py tests/test_main_governance_audit.py
           python -m unittest discover -s tests -p 'test_main_governance_audit.py' -v
 
+# The live governance gate runs even in draft PRs; failure is expected until server enforcement exists.
   main-server-ruleset-audit:
     name: main-server-ruleset-audit
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [governance-contract-tests]
