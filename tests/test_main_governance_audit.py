@@ -229,17 +229,19 @@ class GovernanceAuditTests(unittest.TestCase):
                 with self.assertRaisesRegex(AuditBlocked, "github_audit_admin_credential_missing"):
                     read_github(f"/repos/{REPOSITORY}")
 
-    def test_admin_secret_is_scoped_to_protected_main_job_not_pr_tests(self):
+    def test_daily_audit_does_not_use_administrative_secrets(self):
         workflow = (ROOT / ".github/workflows/main-governance-audit.yml").read_text()
         marker = "  main-server-ruleset-audit:\n"
         self.assertEqual(workflow.count(marker), 1)
         before, after = workflow.split(marker)
-        self.assertNotIn("secrets.AGENT_CORE_RULESET_ADMIN_TOKEN", before)
-        self.assertIn("GITHUB_TOKEN: " + "$" + "{{ secrets.AGENT_CORE_RULESET_ADMIN_TOKEN }}", after)
+        self.assertNotIn("secrets.", workflow)
+        self.assertIn("GITHUB_TOKEN: " + "$" + "{{ github.token }}", after)
+        self.assertIn("run: python -m scripts.audit_readonly_attestation", after)
         self.assertIn(
             "if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
             after,
         )
+        self.assertIn("cron:", before)
         self.assertNotIn("pull_request_target:", workflow)
         self.assertNotIn("continue-on-error:", workflow)
         self.assertNotIn("|| true", workflow)
