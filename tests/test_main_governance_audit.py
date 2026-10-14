@@ -176,7 +176,7 @@ class GovernanceAuditTests(unittest.TestCase):
         )
         self.assertIn("branches: [main]", flow)
         self.assertIn("cron:", flow)
-        self.assertIn("run: python scripts/audit_main_governance.py", flow)
+        self.assertIn("run: python -m scripts.audit_readonly_attestation", flow)
         self.assertIn("needs: [governance-contract-tests]", flow)
         self.assertNotIn("continue-on-error:", flow)
         self.assertNotIn("|| true", flow)
