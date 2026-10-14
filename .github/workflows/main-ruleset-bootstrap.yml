@@ -61,7 +61,7 @@ jobs:
         env:
           AGENT_CORE_RULESET_ADMIN_TOKEN: ${{ secrets.AGENT_CORE_RULESET_ADMIN_TOKEN }}
           EXPECTED_MAIN: ${{ github.event.pull_request.base.sha }}
-        run: python scripts/bootstrap_main_ruleset.py --expected-main "$EXPECTED_MAIN"
+        run: python -m scripts.bootstrap_main_ruleset --expected-main "$EXPECTED_MAIN"
       - name: Independent readback with administrative visibility
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_CORE_RULESET_ADMIN_TOKEN }}

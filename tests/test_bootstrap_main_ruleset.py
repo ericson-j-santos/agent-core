@@ -162,6 +162,23 @@ class BootstrapTests(unittest.TestCase):
             reconcile(fake, copy.deepcopy(EXPECTED), HEAD)
         self.assertEqual(fake.created, 0)
 
+    def test_module_entrypoint_runs_without_import_error_or_admin_token(self):
+        import subprocess
+        import sys
+        safe_env = os.environ.copy()
+        safe_env.pop("AGENT_CORE_RULESET_ADMIN_TOKEN", None)
+        process = subprocess.run(
+            [sys.executable, "-m", "scripts.bootstrap_main_ruleset",
+             "--expected-main", HEAD],
+            env=safe_env, capture_output=True, text=True, timeout=20,
+        )
+        self.assertEqual(process.returncode, 2, process.stderr)
+        self.assertEqual(
+            json.loads(process.stdout).get("reason_code"),
+            "admin_credential_missing",
+        )
+        self.assertNotIn("ModuleNotFoundError", process.stderr)
+
     def test_no_token_or_shell_in_config_file(self):
         text = POLICY.read_text()
         self.assertNotIn("Authorization:", text)
@@ -178,6 +195,8 @@ class BootstrapTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", wf)
         self.assertIn("feat/main-ruleset-bootstrap-20261014", wf)
         self.assertIn("needs: [bootstrap-contract-tests]", wf)
+        self.assertIn('run: python -m scripts.bootstrap_main_ruleset --expected-main "$EXPECTED_MAIN"', wf)
+        self.assertNotIn("run: python scripts/bootstrap_main_ruleset.py", wf)
         self.assertIn("types: [opened, reopened, synchronize, edited]", wf)
         self.assertIn("contents: read", wf)
         self.assertNotIn("pull_request_target:", wf)
