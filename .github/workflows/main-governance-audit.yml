@@ -36,9 +36,12 @@ jobs:
           python -W error::SyntaxWarning -m compileall -q scripts/audit_main_governance.py tests/test_main_governance_audit.py
           python -m unittest discover -s tests -p 'test_main_governance_audit.py' -v
 
-# The live governance gate runs even in draft PRs; failure is expected until server enforcement exists.
+# Contract tests validate positive and negative behavior on PRs.
+# The live server audit remains fatal on main pushes and daily/manual checks.
+# Passing PR tests is NOT evidence that main has active branch protection.
   main-server-ruleset-audit:
     name: main-server-ruleset-audit
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [governance-contract-tests]

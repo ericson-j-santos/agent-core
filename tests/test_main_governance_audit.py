@@ -165,6 +165,32 @@ class GovernanceAuditTests(unittest.TestCase):
         self.assertEqual(called, list(lookups))
         self.assertEqual(observation["main_sha"], HEAD)
 
+    def test_workflow_separates_pr_validation_from_live_enforcement(self):
+        """A missing server ruleset must not be mislabeled a code regression."""
+        flow = (ROOT / ".github/workflows/main-governance-audit.yml").read_text()
+        self.assertIn("name: governance-contract-tests", flow)
+        self.assertIn("name: main-server-ruleset-audit", flow)
+        self.assertIn(
+            "if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
+            flow,
+        )
+        self.assertIn("branches: [main]", flow)
+        self.assertIn("cron:", flow)
+        self.assertIn("run: python scripts/audit_main_governance.py", flow)
+        self.assertIn("needs: [governance-contract-tests]", flow)
+        self.assertNotIn("continue-on-error:", flow)
+        self.assertNotIn("|| true", flow)
+
+    def test_expected_absent_rule_remains_blocking(self):
+        """No change to the pure fail-closed gate is allowed for a green PR."""
+        d = fake_dataset()
+        d["rulesets"] = []
+        with self.assertRaises(AuditBlocked):
+            evaluate(d)
+        d["branch"]["protected"] = False
+        with self.assertRaises(AuditBlocked):
+            evaluate(d)
+
     def test_audit_stops_on_missing_ruleset_without_mutation(self):
         d = fake_dataset()
         prefix = f"/repos/{REPOSITORY}"
