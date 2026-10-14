@@ -162,7 +162,7 @@ class GovernanceAuditTests(unittest.TestCase):
 
         observation = audit(fake_get, d["template"])
         self.assertEqual(observation["writes_performed"], 0)
-        self.assertEqual(called, list(lookups))
+        self.assertEqual(called, list(lookups) + [prefix + "/branches/main"])
         self.assertEqual(observation["main_sha"], HEAD)
 
     def test_workflow_separates_pr_validation_from_live_enforcement(self):
@@ -190,6 +190,35 @@ class GovernanceAuditTests(unittest.TestCase):
         d["branch"]["protected"] = False
         with self.assertRaises(AuditBlocked):
             evaluate(d)
+
+
+    def test_remote_bypass_visibility_must_be_explicit(self):
+        """Missing GitHub bypass_actors (often permission-limited) is not []."""
+        d = fake_dataset()
+        d["detail"].pop("bypass_actors")
+        with self.assertRaisesRegex(AuditBlocked, "ruleset_bypass_unverifiable"):
+            evaluate(d)
+
+    def test_audit_rejects_main_sha_advancing_during_readback(self):
+        d = fake_dataset()
+        prefix = f"/repos/{REPOSITORY}"
+        urls = {
+            prefix: d["repository"],
+            prefix + "/branches/main": d["branch"],
+            prefix + "/rulesets?includes_parents=false": d["rulesets"],
+            prefix + f"/rulesets/{RULE_ID}": d["detail"],
+            prefix + "/rules/branches/main": d["effective"],
+        }
+        calls = []
+        def moving_read(path):
+            calls.append(path)
+            value = copy.deepcopy(urls[path])
+            if path == prefix + "/branches/main" and calls.count(path) == 2:
+                value["commit"]["sha"] = "d" * 40
+            return value
+        with self.assertRaisesRegex(AuditBlocked, "main_sha_changed_during_audit"):
+            audit(moving_read, d["template"])
+        self.assertEqual(calls[-1], prefix + "/branches/main")
 
     def test_audit_stops_on_missing_ruleset_without_mutation(self):
         d = fake_dataset()

@@ -77,7 +77,10 @@ def verify_policy(
              "ruleset_detail_mismatch")
     _require(ruleset_detail.get("target") == "branch", "ruleset_detail_target_invalid")
     _require(ruleset_detail.get("enforcement") == "active", "ruleset_detail_not_active")
-    _require(ruleset_detail.get("bypass_actors") == [], "ruleset_bypass_present")
+    # GitHub may omit bypass_actors for a token without ruleset-edit permission.
+    # Omitted does not mean no bypass: fail closed with an explicit reason.
+    _require("bypass_actors" in ruleset_detail, "ruleset_bypass_unverifiable")
+    _require(ruleset_detail["bypass_actors"] == [], "ruleset_bypass_present")
     _require(
         (ruleset_detail.get("conditions") or {}).get("ref_name") == expected_ref,
         "ruleset_branch_target_mismatch",
@@ -162,7 +165,15 @@ def audit(
     _require(type(rule_id) is int and rule_id > 0, "ruleset_id_invalid")
     detail = read(root + f"/rulesets/{rule_id}")
     effective = read(root + "/rules/branches/main")
-    return verify_policy(template, repo, branch, summaries, detail, effective)
+    observation = verify_policy(template, repo, branch, summaries, detail, effective)
+    # A base may advance during multiple API reads; never reuse an older SHA.
+    last_branch = read(root + "/branches/main")
+    last_sha = (
+        (last_branch.get("commit") or {}).get("sha")
+        if isinstance(last_branch, dict) else None
+    )
+    _require(last_sha == observation["main_sha"], "main_sha_changed_during_audit")
+    return observation
 
 
 def main() -> int:
