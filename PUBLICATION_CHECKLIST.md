@@ -22,7 +22,7 @@ No existing private repository must be renamed, transferred, converted to public
 3. Independently read back the live ruleset and required status check name, main branch protection, no bypass, no direct writes, no force-push, no deletion, and PR requirement.
 4. Execute a safe negative PR/check scenario proving that unapproved changes cannot merge and a positive PR/check scenario proving a reviewed change can merge. Do not perform destructive probes on `main`.
 5. Complete a real GitHub PR E2E against the **same SHA**: observe check-runs, verify HEAD stable, verify 404 negative control and confirm no writes by the diagnostic.
-6. Leave the original private orchestrator and PR #61 unchanged unless an independent migration is authorized and all its gates are met.
+6. Leave any pre-existing source repository and its pull requests unchanged unless an independent migration is authorized and all applicable gates are met.
 
 ## Failure handling
 
