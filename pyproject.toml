@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portable-agent-core"
+version = "0.2.0"
+description = "Versioned read-only module contracts for an independently deployable AI agent core"
+requires-python = ">=3.11"
+keywords = ["agent", "governance", "read-only", "github"]
+
+[tool.setuptools.packages.find]
+include = ["agent_core*"]
