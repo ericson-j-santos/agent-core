@@ -1,0 +1,56 @@
+name: Agent Core Main Governance Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/audit_main_governance.py"
+      - "tests/test_main_governance_audit.py"
+      - ".github/workflows/main-governance-audit.yml"
+      - ".github/rulesets/agent-core-main.json"
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-core-main-governance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  governance-contract-tests:
+    name: governance-contract-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Compile and run read-only governance controls
+        run: |
+          python -W error::SyntaxWarning -m compileall -q scripts/audit_main_governance.py tests/test_main_governance_audit.py
+          python -m unittest discover -s tests -p 'test_main_governance_audit.py' -v
+
+# Contract tests validate positive and negative behavior on PRs.
+# The live server audit remains fatal on main pushes and daily/manual checks.
+# Passing PR tests is NOT evidence that main has active branch protection.
+  main-server-ruleset-audit:
+    name: main-server-ruleset-audit
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [governance-contract-tests]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Check server-side ruleset and required checks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/audit_main_governance.py
