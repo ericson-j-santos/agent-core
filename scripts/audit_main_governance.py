@@ -124,6 +124,8 @@ def read_github(path: str) -> Any:
     _require(path == f"/repos/{REPOSITORY}" or path.startswith(prefix), "api_path_denied")
     _require(".." not in path and "://" not in path, "api_path_invalid")
     token = os.environ.get("GITHUB_TOKEN", "")
+    _require(bool(token.strip()) and len(token) <= 4096,
+             "github_audit_admin_credential_missing")
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",

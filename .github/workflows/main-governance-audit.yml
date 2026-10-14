@@ -51,6 +51,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check server-side ruleset and required checks
+        # An admin-visible read is necessary to prove bypass_actors=[].
+        # This step NEVER executes on untrusted pull_request code.
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.AGENT_CORE_RULESET_ADMIN_TOKEN }}
         run: python scripts/audit_main_governance.py

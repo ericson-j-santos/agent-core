@@ -22,3 +22,25 @@ O token só é lido pelo job confiável `owner-authorized-bootstrap`, condiciona
 - **Falha de credencial/escopo/HEAD ou regra inesperada:** parar com código não zero, preservar main e relatar o motivo sanitizado. Não criar outro ruleset, não contornar a proteção por merge direto.
 
 O bootstrap é uma exceção operacional de instalação **somente na PR**, não um runtime ou fila nova. Não colocar token, link de credencial ou dados privados em arquivos, issues ou logs.
+
+
+## Credencial de leitura da auditoria diária
+
+O GitHub Actions `GITHUB_TOKEN` padrão pode ocultar `bypass_actors` de
+rulesets. Em 14/10/2026, o run pós-merge #38602988869 comprovou
+`ruleset_bypass_unverifiable` com o token padrão, embora o ruleset ativo
+já estivesse no servidor. **Não tratar ausência desse campo como lista vazia.**
+
+A auditoria `main-server-ruleset-audit` usa temporariamente o segredo
+`AGENT_CORE_RULESET_ADMIN_TOKEN` **somente em requisições GET**, e somente
+nos eventos `push main`, `schedule` e `workflow_dispatch`. O teste da
+PR `governance-contract-tests` não recebe esse segredo. O script nunca
+realiza POST, PUT, PATCH ou DELETE.
+
+A credencial temporária expirará segundo a validade concedida pelo
+proprietário; a auditoria falhará fechada depois disso. A solução permanente
+é uma identidade GitHub App com permissão `Administration: read` restrita
+ao mesmo repositório, emitindo tokens temporários sem reusar a permissão
+de escrita do bootstrap. Até essa transição ser homologada, **não apagar
+o segredo sem aceitar que a auditoria ficará vermelha**. A revogação da
+permissão de escrita é uma ação administrativa externa a este pacote.
