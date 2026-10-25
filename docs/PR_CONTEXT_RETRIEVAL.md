@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-Capability: \`github.pr.context.v1\`, **read-only** (risk 0).
+Capability: `github.pr.context.v1`, **read-only** (risk 0).
 
 This is a bounded retrieval component, **not** a complete Agentic RAG agent,
 vector search service, GitHub log reader, autonomous model, code editor or
@@ -12,24 +12,24 @@ documents at the **same PR head SHA**.
 
 A caller may ask a question to prioritize retrieval. The question cannot
 choose commands, tools, API hosts, paths outside the operator allowlist or a
-repository outside \`AGENT_CORE_ALLOWED_REPOS\`. Retrieved text is untrusted,
+repository outside `AGENT_CORE_ALLOWED_REPOS`. Retrieved text is untrusted,
 including instructions that may appear inside the source itself.
 
 ## Existing parts reused
 
-- \`GitHubPRDiagnostics\`: real PR head/base and check-run snapshot, with
+- `GitHubPRDiagnostics`: real PR head/base and check-run snapshot, with
   independent reread and fail-closed outcomes.
-- \`GitHubHTTPS\`: fixed official GitHub HTTPS origin, GET-only, no redirects
+- `GitHubHTTPS`: fixed official GitHub HTTPS origin, GET-only, no redirects
   and bounded response sizes.
-- \`Registry\`, \`ModuleRequest\` and \`ModuleResult\`: versioned risk-0
+- `Registry`, `ModuleRequest` and `ModuleResult`: versioned risk-0
   capability admission, repository allowlist, expected head and no writes.
 
 ## Source contract and planning
 
 1. Require exact PR number, question, expected head SHA and repository allowlist.
 2. Diagnose PR/check-runs through the pre-existing module.
-3. Restrict source paths to \`README.md\`, \`AGENTS.md\` or Markdown below
-   \`docs/\`. Only explicitly supplied paths are eligible; no search of
+3. Restrict source paths to `README.md`, `AGENTS.md` or Markdown below
+   `docs/`. Only explicitly supplied paths are eligible; no search of
    arbitrary files or implicit traversal of an entire repository.
 4. Prioritize paths matching question terms. Read at most three of up to four
    configured paths. If evidence remains weak, read another bounded source.
@@ -40,7 +40,7 @@ including instructions that may appear inside the source itself.
 7. Re-read the PR head/base from the official API after retrieval and fail
    closed if they changed.
 
-If no matching lines are found, report \`insufficient_evidence\` rather than
+If no matching lines are found, report `insufficient_evidence` rather than
 invent an answer. Check-run status is a snapshot; success does not attest
 execution of every job or authorize merge. No content is interpreted as an
 instruction to execute.
@@ -50,16 +50,16 @@ instruction to execute.
 After the normal operational preflight (when running on governed hosts), and
 with a repository allowlisted by the operator:
 
-\`\`\`text
+```text
 AGENT_CORE_ALLOWED_REPOS=owner/repository
 python -m agent_core research-pr --repository owner/repository \
   --number 123 --expected-head <40-char-PR-head-SHA> \
   --question "What CI evidence explains this failure?" \
   --sources README.md docs/CI.md
-\`\`\`
+```
 
 A GitHub token is optional only for public resources; private resources require
-existing approved \`GITHUB_TOKEN\` configuration. Do not put tokens in command
+existing approved `GITHUB_TOKEN` configuration. Do not put tokens in command
 arguments or responses. This command does not invoke Ollama or a worker and
 does not write to GitHub.
 
