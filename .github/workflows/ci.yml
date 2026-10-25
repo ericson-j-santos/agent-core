@@ -38,6 +38,7 @@ jobs:
               names = set(z.namelist())
           assert {'agent_core/__init__.py', 'agent_core/contracts.py',
                   'agent_core/registry.py', 'agent_core/github.py',
+                  'agent_core/pr_context.py',
                   'agent_core/__main__.py'} <= names, 'wheel_missing_required_module'
           print('PORTABLE_WHEEL_VERIFIED')
           PY
@@ -74,5 +75,39 @@ jobs:
                         '--number', '99999999'])
           if bad.returncode != 2 or json.loads(bad.stdout).get('reason_code') != 'github_http_404':
               raise SystemExit('github_negative_control_missing')
-          print(json.dumps({'head_readback_verified': True, 'github_404_control': True}))
+          research = invoke([
+              'research-pr', '--repository', os.environ['TARGET_REPO'],
+              '--number', os.environ['TARGET_PR'],
+              '--expected-head', os.environ['EXPECTED_HEAD'],
+              '--question', 'agent module', '--sources', 'README.md',
+          ])
+          if research.returncode != 0:
+              raise SystemExit('github_context_read_failed')
+          context = json.loads(research.stdout)
+          evidence = context.get('evidence', {})
+          if (context.get('head_sha') != os.environ['EXPECTED_HEAD']
+                  or context.get('state_changed') is not False
+                  or context.get('merge_authorized') is not False
+                  or evidence.get('retrieval_state') != 'matched'
+                  or evidence.get('pr_head_readback_stable') is not True
+                  or not evidence.get('snippets')
+                  or not evidence.get('sources')
+                  or evidence['sources'][0].get('ref_sha') != os.environ['EXPECTED_HEAD']):
+              raise SystemExit('github_context_readback_invalid')
+          missing = invoke([
+              'research-pr', '--repository', os.environ['TARGET_REPO'],
+              '--number', os.environ['TARGET_PR'],
+              '--expected-head', os.environ['EXPECTED_HEAD'],
+              '--question', 'agent module',
+              '--sources', 'docs/AGENT_CONTEXT_E2E_MISSING.md',
+          ])
+          if (missing.returncode != 2
+                  or json.loads(missing.stdout).get('reason_code') != 'github_http_404'):
+              raise SystemExit('github_context_negative_404_missing')
+          print(json.dumps({
+              'head_readback_verified': True,
+              'github_404_control': True,
+              'context_sha_and_content_verified': True,
+              'context_missing_source_404_control': True,
+          }))
           PY
