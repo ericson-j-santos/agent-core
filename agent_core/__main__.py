@@ -9,6 +9,11 @@ from dataclasses import asdict
 
 from .contracts import Blocked, ModuleRequest, valid_repository
 from .github import CAPABILITY, GitHubHTTPS, GitHubPRDiagnostics
+from .pr_context import (
+    CAPABILITY as CONTEXT_CAPABILITY,
+    ContextGitHubHTTPS,
+    GitHubPRContext,
+)
 from .registry import Registry
 
 
@@ -20,24 +25,50 @@ def main(argv: list[str] | None = None) -> int:
     diagnose.add_argument("--repository", required=True)
     diagnose.add_argument("--number", required=True, type=int)
     diagnose.add_argument("--expected-head")
+    research = commands.add_parser("research-pr")
+    research.add_argument("--repository", required=True)
+    research.add_argument("--number", required=True, type=int)
+    research.add_argument("--expected-head", required=True)
+    research.add_argument("--question", required=True)
+    research.add_argument("--sources", nargs="+", default=["README.md"])
     args = parser.parse_args(argv)
     try:
         if args.action == "list-modules":
-            print(json.dumps([asdict(GitHubPRDiagnostics.descriptor)], sort_keys=True))
+            print(json.dumps([
+                asdict(GitHubPRDiagnostics.descriptor),
+                asdict(GitHubPRContext.descriptor),
+            ], sort_keys=True))
             return 0
-        allowed = frozenset(filter(None, (s.strip() for s in os.environ.get("AGENT_CORE_ALLOWED_REPOS", "").split(","))))
+        allowed = frozenset(filter(
+            None, (s.strip() for s in os.environ.get(
+                "AGENT_CORE_ALLOWED_REPOS", ""
+            ).split(","))
+        ))
         if not allowed or any(not valid_repository(repo) for repo in allowed):
             raise Blocked("allowlist_not_configured")
         token = os.environ.get("GITHUB_TOKEN") or None
         registry = Registry(allowed)
-        registry.register(GitHubPRDiagnostics(GitHubHTTPS(token)))
-        observation = registry.observe(ModuleRequest(
-            repository=args.repository,
-            capability_id=CAPABILITY,
-            correlation_id="read-pr-%d" % args.number,
-            payload={"pr_number": args.number},
-            expected_head=args.expected_head,
-        ))
+        if args.action == "research-pr":
+            registry.register(GitHubPRContext(
+                ContextGitHubHTTPS(token),
+                source_paths=tuple(args.sources),
+            ))
+            observation = registry.observe(ModuleRequest(
+                repository=args.repository,
+                capability_id=CONTEXT_CAPABILITY,
+                correlation_id="research-pr-%d" % args.number,
+                payload={"pr_number": args.number, "question": args.question},
+                expected_head=args.expected_head,
+            ))
+        else:
+            registry.register(GitHubPRDiagnostics(GitHubHTTPS(token)))
+            observation = registry.observe(ModuleRequest(
+                repository=args.repository,
+                capability_id=CAPABILITY,
+                correlation_id="read-pr-%d" % args.number,
+                payload={"pr_number": args.number},
+                expected_head=args.expected_head,
+            ))
         print(json.dumps(asdict(observation), sort_keys=True))
         return 0
     except Blocked as exc:
